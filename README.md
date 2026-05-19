@@ -37,37 +37,61 @@ The extension converts Jira worklog timestamps to Amplify's timezone (BD / GMT+6
 ## Tabs
 
 ### Sync
-Select a date range (calendar or presets like Today, Last 7 days, This month) and the extension will:
+Select a date range using the calendar or presets (Today, Yesterday, Last 7 days, etc.) and click to analyze. The extension will:
 - Fetch your Jira worklogs for that period
 - Fetch existing Amplify entries
-- Show what needs to be created, what already exists, and any conflicts
-- One-click sync to push new entries to Amplify
+- Compare and show a breakdown:
+  - **To create** - new entries that will be added to Amplify
+  - **Already synced** - entries that already exist in Amplify (no action needed)
+  - **Conflicts** - same ticket and date but different duration (you can choose to override)
+  - **Unmapped** - entries that can't be synced because the project or task mapping is missing
+
+Before syncing, you can review every entry in the table. If something looks wrong (wrong activity, wrong time, wrong project), you can edit it inline before clicking Sync. Nothing gets pushed to Amplify until you confirm.
 
 ### Priority
-Shows your assigned Jira tickets ranked by a universal priority score:
+Shows your assigned Jira tickets ranked by a priority score. The score is calculated from four signals:
 
-| Signal | Points | Description |
+| Signal | Points | What it means |
 |---|---|---|
-| Swimlane position | 0–30 | Higher lane on the board = higher score |
-| Board column | 0–25 | Closer to the end of the workflow = higher score |
-| Deadline | 0–50 | Overdue or approaching deadline = higher score |
-| Jira priority | 0–15 | Highest/High/Medium/Low/Lowest |
+| Swimlane position | 0 to 30 | Higher lane on the board = more important |
+| Board column | 0 to 25 | Closer to the end of the workflow = finish it first |
+| Deadline | 0 to 50 | Overdue or approaching deadline = more urgent |
+| Jira priority | 0 to 15 | Based on Highest/High/Medium/Low/Lowest in Jira |
 
-Works across all roles — Developer, QA, Designer, E-com Manager. The extension detects your role from Jira custom fields and routes each ticket to the appropriate board (Development Pipeline, Quality Assurance, Design Master).
+This works the same for all roles. The extension detects your role from Jira fields (Developer, QA, Designer, E-com Manager) and routes each ticket to the right board (Development Pipeline, Quality Assurance, Design Master). You don't need to configure anything.
 
-Excluded statuses: `Done`, `Won't Do`, `Selected for Setup Validation`, `Setup Validation in Progress`, `Ready to Launch`.
+Tickets in these statuses are excluded: `Done`, `Won't Do`, `Selected for Setup Validation`, `Setup Validation in Progress`, `Ready to Launch`.
 
 ### Activity Map
-Map Jira worklog comment codes (e.g., `201000`) to Amplify activities. If no code is found, the description text is auto-matched. Set a default activity for unmatched entries.
+Controls how Jira worklogs get mapped to Amplify activities.
+
+**Code mappings:** If your Jira worklog comment starts with a 6-digit code (e.g., `201000`), it maps to a specific Amplify activity. You can add, edit, or remove these mappings. For example:
+- `201000` > Frontend Development
+- `202010` > Frontend Dev - Bug Fix
+- `203000` > Investigation
+
+**Auto-matching:** If no code is found in the comment, the extension tries to match the description text against Amplify activity names automatically.
+
+**Default activity:** If nothing matches, the default activity is used. You can change this from the dropdown.
+
+Click **Save Activity Map** after making changes.
 
 ### Project Map
-Map Jira project prefixes (e.g., `VET`, `TOU`) to Amplify projects. Used when auto-detection from Amplify history fails.
+Maps Jira project prefixes to Amplify projects. The extension first tries to auto-detect this from your Amplify timesheet history. If it can't find a match, it falls back to this map.
+
+For example, if your Jira tickets start with `VET-123`, you'd map the prefix `VET` to the corresponding Amplify project.
+
+Click **+ Add project mapping** to add a new one. Click **Save Project Map** after making changes.
 
 ### Task Map
-Override the project and/or activity for specific Jira tickets. Highest priority — overrides all other mappings.
+Overrides for specific Jira tickets. This has the highest priority and overrides both the Activity Map and Project Map.
+
+Use this when a particular ticket needs a different project or activity than what the automatic mapping would pick. For example, if `DSI-456` should always go to "Meeting - Internal" instead of the default activity.
+
+Click **+ Add task mapping** to add a new one. Click **Save Task Map** after making changes.
 
 ### Stats
-View worklog statistics for any date range: total hours, daily averages, breakdowns by project and activity.
+View your worklog statistics for any date range. Shows total hours, daily averages, and breakdowns by project and activity. Use the calendar or presets to pick a range.
 
 ## Troubleshooting
 
