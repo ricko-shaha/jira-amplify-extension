@@ -19,7 +19,9 @@ Chrome extension that syncs Jira worklogs to Amplify timesheets. Includes priori
 
 ## First-Time Setup
 
-1. **Log in to Jira** in your browser — the extension auto-detects your Jira domain from cookies. No manual Jira configuration needed.
+> **Important:** The extension must be installed in the same Chrome profile where you are logged in to Jira. It reads Jira cookies from your browser session to authenticate. Amplify does not have this requirement — it uses its own login with the credentials you enter in Settings.
+
+1. **Log in to Jira** in the same Chrome profile where the extension is installed — it auto-detects your Jira domain from cookies. No manual Jira configuration needed.
 2. Click the extension icon and go to the **Settings** tab.
 3. Enter your **Amplify Email** and **Amplify Password**, then click **Save Settings**.
    - Credentials are stored locally in Chrome storage. They are only sent to Amplify for authentication.
