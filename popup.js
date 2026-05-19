@@ -1780,43 +1780,5 @@ document.addEventListener('DOMContentLoaded', function() {
       showView('sync');
     });
 
-    // Update check
-    (function checkForUpdate() {
-      var currentVersion = chrome.runtime.getManifest().version;
-      fetch('https://raw.githubusercontent.com/Ricko-Shaha/Jira-Amplify-Extension/master/manifest.json')
-        .then(function(r) { return r.json(); })
-        .then(function(remote) {
-          if (remote.version && remote.version !== currentVersion) {
-            var banner = document.getElementById('update-banner');
-            document.getElementById('update-text').textContent = 'v' + remote.version + ' available (current: v' + currentVersion + ')';
-            banner.style.display = 'flex';
-
-            document.getElementById('update-btn').addEventListener('click', function() {
-              var btn = this;
-              btn.textContent = 'Updating...';
-              btn.disabled = true;
-              chrome.runtime.sendNativeMessage('com.jira_amplify.updater', { action: 'pull' }, function(response) {
-                if (chrome.runtime.lastError) {
-                  btn.textContent = 'Failed — run install.bat first';
-                  btn.disabled = false;
-                  return;
-                }
-                if (response && response.success) {
-                  btn.textContent = 'Reloading...';
-                  setTimeout(function() { chrome.runtime.reload(); }, 500);
-                } else {
-                  btn.textContent = 'Failed';
-                  btn.disabled = false;
-                  setTimeout(function() { btn.textContent = 'Retry'; }, 2000);
-                }
-              });
-            });
-
-            document.getElementById('update-dismiss').addEventListener('click', function() {
-              banner.style.display = 'none';
-            });
-          }
-        }).catch(function() {});
-    })();
   });
 });
