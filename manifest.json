@@ -3,7 +3,7 @@
   "name": "Jira-Amplify Timelog Sync",
   "version": "1.0.0",
   "description": "Sync Jira worklogs to Amplify timesheets. Dashboard with sync, priority, delta, gaps, and reminder tools.",
-  "permissions": ["storage", "cookies", "tabs"],
+  "permissions": ["storage", "cookies", "tabs", "nativeMessaging"],
   "host_permissions": [
     "https://*.atlassian.net/*",
     "https://*.atlassian.com/*",

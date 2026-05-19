@@ -7,6 +7,7 @@ Chrome extension that syncs Jira worklogs to Amplify timesheets. Includes priori
 - Google Chrome (or any Chromium-based browser)
 - An active Jira Cloud account (must be logged in)
 - An Amplify account at `amplify.echologyx.com`
+- [Node.js](https://nodejs.org) and [Git](https://git-scm.com) installed (for auto-updates)
 
 ## Installation
 
@@ -72,9 +73,23 @@ View worklog statistics for any date range: total hours, daily averages, breakdo
 - **Sync times look wrong** — Go to Settings and manually set the Time Offset instead of Auto.
 - **Priority shows no tickets** — Your Jira must have role fields (Developer, QA, Designer, or E-com Manager) assigned to your account on active tickets.
 - **Amplify login fails** — Double-check your Amplify email and password. The extension authenticates via the Amplify web login flow.
+- **Update button says "Failed — run install.bat first"** — You haven't set up the auto-updater yet. Run `install.bat` in the extension folder (see Auto-Updates section above).
 
-## Updating
+## Auto-Updates (One-Time Setup)
 
-To update the extension after pulling new changes:
-1. Go to `chrome://extensions`.
-2. Click the reload icon on the Jira-Amplify Timelog Sync card.
+The extension can update itself with one click. This requires a one-time setup to register a local helper:
+
+1. Open `chrome://extensions` in Chrome.
+2. Find **Jira-Amplify Timelog Sync** and copy its **ID** (the long string of letters under the name).
+3. Double-click **`install.bat`** in the extension folder.
+4. Paste your extension ID when prompted and press Enter.
+
+That's it. From now on, when an update is pushed to GitHub:
+- A yellow banner appears at the top of the extension: **"v1.x.x available"**
+- Click **Update** — the extension pulls the latest code and reloads itself automatically.
+
+## Manual Updating
+
+If you skipped the auto-update setup, you can update manually:
+1. Run `git pull` in the extension folder.
+2. Go to `chrome://extensions` and click the reload icon on the extension card.
