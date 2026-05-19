@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="topbar">
+    <img src="logo.png" class="topbar-logo">
+    <div class="tabs">
+      <button class="tab active" data-view="sync">Sync</button>
+      <button class="tab" data-view="priority">Priority</button>
+      <button class="tab" data-view="actmap">Activity Map</button>
+      <button class="tab" data-view="projmap">Project Map</button>
+      <button class="tab" data-view="taskmap">Task Map</button>
+      <button class="tab" data-view="stats">Stats</button>
+      <button class="tab" data-view="settings">Settings</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Sync -->
+    <div id="sync-view" class="view">
+      <div class="sync-picker">
+        <div class="cal-side">
+          <div class="cal-header">
+            <button class="cal-nav" id="cal-prev">&lt;</button>
+            <span id="cal-title"></span>
+            <button class="cal-nav" id="cal-next">&gt;</button>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-dow">Mo</div><div class="cal-dow">Tu</div><div class="cal-dow">We</div><div class="cal-dow">Th</div><div class="cal-dow">Fr</div><div class="cal-dow">Sa</div><div class="cal-dow">Su</div>
+          </div>
+          <div class="cal-days" id="cal-days"></div>
+          <div class="cal-range-display" id="cal-range-display"></div>
+        </div>
+        <div class="preset-side">
+          <button class="preset active" data-mode="today">Today</button>
+          <button class="preset" data-mode="yesterday">Yesterday</button>
+          <button class="preset" data-mode="week">Last 7 days</button>
+          <button class="preset" data-mode="2weeks">Last 14 days</button>
+          <button class="preset" data-mode="month">Last 30 days</button>
+          <button class="preset" data-mode="thismonth">This month</button>
+        </div>
+      </div>
+      <div id="sync-summary"></div>
+      <div id="sync-status" class="status-box"></div>
+      <div id="sync-results"></div>
+    </div>
+
+    <!-- Priority -->
+    <div id="priority-view" class="view" style="display:none">
+      <div id="priority-status" class="status-box"></div>
+      <div id="priority-results"></div>
+    </div>
+
+    <!-- Activity Map -->
+    <div id="actmap-view" class="view" style="display:none">
+      <div id="actmap-status" class="status-box"></div>
+
+      <div class="map-section">
+        <div class="map-section-header">
+          <span class="map-section-title">Code Mappings</span>
+          <small class="map-hint">Jira worklog comments starting with a numeric code (e.g. <code>201000</code>) map to an Amplify activity. If no code is found, the description text is auto-matched against Amplify activity names.</small>
+        </div>
+        <div id="code-mappings"></div>
+        <button class="btn-add" id="add-code">+ Add code mapping</button>
+      </div>
+
+      <div class="map-section">
+        <div class="map-section-header">
+          <span class="map-section-title">Default Activity</span>
+          <small class="map-hint">Used when no code or text pattern matches.</small>
+        </div>
+        <select class="map-select" id="default-activity"></select>
+      </div>
+
+      <div style="margin-top:14px; display:flex; align-items:center; gap:10px">
+        <button class="btn-primary" id="save-actmap">Save Activity Map</button>
+        <span id="actmap-save-msg" class="save-msg">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Project Map -->
+    <div id="projmap-view" class="view" style="display:none">
+      <div id="projmap-status" class="status-box"></div>
+
+      <div class="map-section">
+        <div class="map-section-header">
+          <span class="map-section-title">Jira Project → Amplify Project</span>
+          <small class="map-hint">Map Jira project prefixes (e.g. <code>VET</code>, <code>TOU</code>) to Amplify projects. Used when auto-detection fails.</small>
+        </div>
+        <div id="proj-mappings"></div>
+        <button class="btn-add" id="add-proj">+ Add project mapping</button>
+      </div>
+
+      <div style="margin-top:14px; display:flex; align-items:center; gap:10px">
+        <button class="btn-primary" id="save-projmap">Save Project Map</button>
+        <span id="projmap-save-msg" class="save-msg">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Task Map -->
+    <div id="taskmap-view" class="view" style="display:none">
+      <div id="taskmap-status" class="status-box"></div>
+
+      <div class="map-section">
+        <div class="map-section-header">
+          <span class="map-section-title">Jira Ticket → Project + Activity Override</span>
+          <small class="map-hint">Override the project and/or activity for specific Jira tickets. Highest priority — overrides all other mappings.</small>
+        </div>
+        <div id="task-mappings"></div>
+        <button class="btn-add" id="add-task">+ Add task mapping</button>
+      </div>
+
+      <div style="margin-top:14px; display:flex; align-items:center; gap:10px">
+        <button class="btn-primary" id="save-taskmap">Save Task Map</button>
+        <span id="taskmap-save-msg" class="save-msg">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div id="stats-view" class="view" style="display:none">
+      <div class="sync-picker">
+        <div class="cal-side">
+          <div class="cal-header">
+            <button class="cal-nav" id="stat-cal-prev">&lt;</button>
+            <span id="stat-cal-title"></span>
+            <button class="cal-nav" id="stat-cal-next">&gt;</button>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-dow">Mo</div><div class="cal-dow">Tu</div><div class="cal-dow">We</div><div class="cal-dow">Th</div><div class="cal-dow">Fr</div><div class="cal-dow">Sa</div><div class="cal-dow">Su</div>
+          </div>
+          <div class="cal-days" id="stat-cal-days"></div>
+          <div class="cal-range-display" id="stat-cal-range"></div>
+        </div>
+        <div class="preset-side">
+          <button class="preset stat-preset active" data-mode="week">Last 7 days</button>
+          <button class="preset stat-preset" data-mode="2weeks">Last 14 days</button>
+          <button class="preset stat-preset" data-mode="month">Last 30 days</button>
+          <button class="preset stat-preset" data-mode="60days">Last 60 days</button>
+          <button class="preset stat-preset" data-mode="90days">Last 90 days</button>
+          <button class="preset stat-preset" data-mode="thismonth">This month</button>
+        </div>
+      </div>
+      <div id="stats-status" class="status-box"></div>
+      <div id="stats-results"></div>
+    </div>
+
+    <!-- Settings -->
+    <div id="settings-view" class="view" style="display:none">
+      <div id="profile-card"></div>
+      <div class="field">
+        <label>Amplify Email</label>
+        <input type="text" id="amplify-email" placeholder="your-email@company.com">
+      </div>
+      <div class="field">
+        <label>Amplify Password</label>
+        <input type="password" id="amplify-password" placeholder="your-amplify-password">
+        <small>Stored locally. Only sent to Amplify for login.</small>
+      </div>
+      <div class="field">
+        <label>Amplify Time Offset</label>
+        <div class="offset-drop" id="offset-drop">
+          <div class="offset-drop-display" id="offset-drop-display">Auto (recommended)</div>
+          <div class="offset-drop-panel" id="offset-drop-panel">
+            <table class="offset-table">
+              <thead>
+                <tr><th>Offset</th><th>Jira Timezone</th><th>10 AM UTC →</th></tr>
+              </thead>
+              <tbody>
+                <tr class="offset-opt selected" data-value="auto"><td><strong>Auto</strong></td><td>Auto-detect</td><td class="offset-result">Varies</td></tr>
+                <tr class="offset-opt" data-value="none"><td><strong>None</strong></td><td>BD (GMT+6)</td><td class="offset-result">No change</td></tr>
+                <tr class="offset-opt" data-value="5"><td>+5</td><td>UTC+5</td><td class="offset-result">3:00 PM</td></tr>
+                <tr class="offset-opt" data-value="5.5"><td>+5:30</td><td>UTC+5:30 (IST)</td><td class="offset-result">3:30 PM</td></tr>
+                <tr class="offset-opt" data-value="6"><td>+6</td><td>UTC+6 (BD)</td><td class="offset-result">4:00 PM</td></tr>
+                <tr class="offset-opt" data-value="7"><td>+7</td><td>UTC+7</td><td class="offset-result">5:00 PM</td></tr>
+                <tr class="offset-opt" data-value="8"><td>+8</td><td>CET / German</td><td class="offset-result">6:00 PM</td></tr>
+                <tr class="offset-opt" data-value="9"><td>+9</td><td>UTC+9 (JST/KST)</td><td class="offset-result">7:00 PM</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <small>Auto detects your Jira timezone. Override only if synced times look wrong.</small>
+      </div>
+      <button class="btn-primary" id="save-settings">Save Settings</button>
+      <span id="save-msg" class="save-msg">Saved!</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

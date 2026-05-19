@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Jira-Amplify Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <nav class="sidebar">
+    <img class="logo-img" src="logo.png" alt="Logo">
+    <button class="nav-btn active" data-view="sync">Sync</button>
+    <button class="nav-btn" data-view="priority">Priority</button>
+    <button class="nav-btn" data-view="remind">Remind</button>
+    <button class="nav-btn" data-view="settings">Settings</button>
+  </nav>
+
+  <main class="content">
+    <!-- Setup notice -->
+    <div id="setup-view" class="view" style="display:none">
+      <div class="card center-card">
+        <h2>Welcome to Jira-Amplify Sync</h2>
+        <p>Configure your credentials to get started.</p>
+        <button class="btn btn-primary" onclick="showView('settings')">Open Settings</button>
+      </div>
+    </div>
+
+    <!-- Sync view -->
+    <div id="sync-view" class="view">
+      <h2>Sync Worklogs</h2>
+      <div class="toolbar">
+        <button class="btn btn-sm active" data-mode="today">Today</button>
+        <button class="btn btn-sm" data-mode="yesterday">Yesterday</button>
+        <button class="btn btn-sm" data-mode="week">Last 7</button>
+      </div>
+      <div id="sync-status" class="status-box"></div>
+      <div id="sync-results"></div>
+    </div>
+
+    <!-- Priority view -->
+    <div id="priority-view" class="view" style="display:none">
+      <h2>Task Priority</h2>
+      <div id="priority-status" class="status-box"></div>
+      <div id="priority-results"></div>
+    </div>
+
+    <!-- Remind view -->
+    <div id="remind-view" class="view" style="display:none">
+      <h2>Timelog Health Check</h2>
+      <div id="remind-status" class="status-box"></div>
+      <div id="remind-results"></div>
+    </div>
+
+    <!-- Settings view -->
+    <div id="settings-view" class="view" style="display:none">
+      <h2>Settings</h2>
+      <div class="card" style="max-width:480px">
+        <div class="field">
+          <label>Jira Domain</label>
+          <input type="text" id="jira-domain" placeholder="your-company.atlassian.net">
+          <small>Just the domain. You must be logged into Jira in this browser.</small>
+        </div>
+        <div class="field">
+          <label>Amplify Email</label>
+          <input type="text" id="amplify-email" placeholder="your-email@company.com">
+        </div>
+        <div class="field">
+          <label>Amplify Password</label>
+          <input type="password" id="amplify-password" placeholder="your-amplify-password">
+          <small>Stored locally. Never sent anywhere except Amplify for login.</small>
+        </div>
+        <button class="btn btn-primary" id="save-settings">Save Settings</button>
+        <span id="save-msg" style="margin-left:12px;color:#16a34a;display:none">Saved!</span>
+      </div>
+    </div>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
