@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jira-Amplify Timelog Sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sync Jira worklogs to Amplify timesheets. Dashboard with sync, priority, delta, gaps, and reminder tools.",
   "permissions": ["storage", "cookies", "tabs", "nativeMessaging"],
   "host_permissions": [
