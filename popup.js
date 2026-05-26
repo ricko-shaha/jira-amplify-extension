@@ -163,7 +163,7 @@ Jira.prototype.worklogs = function(sd, ed) {
           return prom.then(function(wls) {
             wls.forEach(function(w) {
               if (!w.author || w.author.accountId !== self.uid) return;
-              var d = new Date(w.started).toISOString().split('T')[0];
+              var d = w.started.split('T')[0];
               if (d < sd || d > ed) return;
               var c = typeof w.comment === 'string' ? w.comment : (w.comment && w.comment.content ? w.comment.content.map(function(b) { return b.content ? b.content.map(function(t) { return t.text; }).join('') : ''; }).join('\n') : '');
               out.push({ issueKey: iss.key, summary: iss.fields.summary, project: iss.fields.project.name, projectKey: iss.fields.project.key, started: w.started, timeSpentSeconds: w.timeSpentSeconds, comment: c });
