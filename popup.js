@@ -903,7 +903,6 @@ function runSync(startDate, endDate) {
                 if (taskId) p.task_id = taskId; else p.task_name = parentKey ? parentKey + ' Validate ' + ent.ticket : ent.ticket + ' | ' + ent.summary;
                 return amp.create(p);
               });
-            });
             }).then(function() { ok2++; }).catch(function() { fail2++; });
           });
         });
