@@ -33,11 +33,13 @@ The extension places all worklogs sequentially between **2:00 PM and 10:00 PM** 
 
 ## E-com Manager Mode
 
-If you are an E-com Manager, enable the **E-com Manager** checkbox in Settings. When enabled, worklogs are created under the parent ticket in Amplify instead of the child ticket.
+If your Jira role is detected as **E-com Manager** (shown as the badge on your profile card in Settings), the extension automatically creates worklogs under the parent ticket in Amplify.
 
 For example, if you log time on `BOD-363` and its parent is `BOD-638`, the Amplify entry will be created as:
 - Task: `BOD-638 Validate BOD-363`
 - Description: `BOD-638 Validate BOD-363`
+
+No configuration needed. The role is detected from your Jira ticket assignments.
 
 ## Tabs
 

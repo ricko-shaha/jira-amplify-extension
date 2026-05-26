@@ -490,7 +490,8 @@ Amp.prototype.fetchAllActivities = function() {
 };
 
 /* ═══ UI ═══ */
-var jira, amp, settings;
+var jira, amp, settings, userRoles = [];
+function isEcomManager() { return userRoles.some(function(r) { var l = r.toLowerCase(); return l.indexOf('e-com') !== -1 || l.indexOf('ecom') !== -1; }); }
 var calMonth, calYear, calStart = null, calEnd = null, calPicking = 'start';
 
 function showView(name) {
@@ -653,7 +654,7 @@ function runSync(startDate, endDate) {
           if (!proj) { unmapped.push({ ticket: wl.issueKey, summary: wl.summary, date: t.start_date, duration: fd(wl.timeSpentSeconds), reason: 'Project "' + wl.projectKey + '" not found' }); return; }
 
           // E-com mode: fetch parent ticket and use parent-based task name
-          var ecomP = settings.ecomMode ? jira._r('GET', '/rest/api/3/issue/' + wl.issueKey + '?fields=parent').then(function(r) {
+          var ecomP = isEcomManager() ? jira._r('GET', '/rest/api/3/issue/' + wl.issueKey + '?fields=parent').then(function(r) {
             var parent = r.body && r.body.fields && r.body.fields.parent;
             return parent ? parent.key : null;
           }).catch(function() { return null; }) : Promise.resolve(null);
@@ -889,7 +890,7 @@ function runSync(startDate, endDate) {
               return w.issueKey === ent.ticket && w._amp && w._amp.start_date === ent.date;
             });
             if (!wl) throw new Error('Worklog not found');
-            var ecomP2 = settings.ecomMode ? jira._r('GET', '/rest/api/3/issue/' + ent.ticket + '?fields=parent').then(function(r) {
+            var ecomP2 = isEcomManager() ? jira._r('GET', '/rest/api/3/issue/' + ent.ticket + '?fields=parent').then(function(r) {
               var parent = r.body && r.body.fields && r.body.fields.parent;
               return parent ? parent.key : null;
             }).catch(function() { return null; }) : Promise.resolve(null);
@@ -1476,6 +1477,7 @@ function loadProfile() {
         var roleList = Object.keys(roles);
         return roleList.length ? roleList : ['Team Member'];
       }).catch(function() { return ['Team Member']; }).then(function(roleList) {
+        userRoles = roleList;
         var rightHtml = roleList.map(function(r) { return '<span class="profile-role-badge">' + r + '</span>'; }).join(' ');
         card.innerHTML = '<div class="profile-card">' +
           (avatar ? '<img class="profile-avatar" src="' + avatar + '">' : '') +
@@ -1699,7 +1701,7 @@ function runStats() {
 
 /* ═══ Init ═══ */
 document.addEventListener('DOMContentLoaded', function() {
-  chrome.storage.local.get(['amplifyEmail', 'amplifyPassword', 'activityMap', 'projectMap', 'taskMap', 'ecomMode']).then(function(s) {
+  chrome.storage.local.get(['amplifyEmail', 'amplifyPassword', 'activityMap', 'projectMap', 'taskMap']).then(function(s) {
     settings = s;
 
     // Load activity mappings from saved config
@@ -1720,14 +1722,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Settings
     if (s.amplifyEmail) document.getElementById('amplify-email').value = s.amplifyEmail;
     if (s.amplifyPassword) document.getElementById('amplify-password').value = s.amplifyPassword;
-    if (s.ecomMode) document.getElementById('ecom-mode').checked = true;
 
     document.getElementById('save-settings').addEventListener('click', function() {
       var ae = document.getElementById('amplify-email').value.trim();
       var ap = document.getElementById('amplify-password').value;
-      var ec = document.getElementById('ecom-mode').checked;
       if (!ae || !ap) return;
-      chrome.storage.local.set({ amplifyEmail: ae, amplifyPassword: ap, ecomMode: ec }).then(function() {
+      chrome.storage.local.set({ amplifyEmail: ae, amplifyPassword: ap }).then(function() {
         settings = { amplifyEmail: ae, amplifyPassword: ap };
         amp = new Amp();
         detectJiraDomain().then(function(domain) {
