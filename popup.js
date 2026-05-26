@@ -653,16 +653,17 @@ function runSync(startDate, endDate) {
         return pp.then(function(proj) {
           if (!proj) { unmapped.push({ ticket: wl.issueKey, summary: wl.summary, date: t.start_date, duration: fd(wl.timeSpentSeconds), reason: 'Project "' + wl.projectKey + '" not found' }); return; }
 
-          // E-com mode: fetch parent ticket and use parent-based task name
-          var ecomP = isEcomManager() ? jira._r('GET', '/rest/api/3/issue/' + wl.issueKey + '?fields=parent').then(function(r) {
-            var parent = r.body && r.body.fields && r.body.fields.parent;
-            return parent ? parent.key : null;
+          // E-com mode: find "Validate" subtask and use its key for Amplify
+          var ecomP = isEcomManager() ? jira._r('GET', '/rest/api/3/issue/' + wl.issueKey + '?fields=subtasks').then(function(r) {
+            var subtasks = r.body && r.body.fields && r.body.fields.subtasks || [];
+            var validate = subtasks.find(function(s) { return s.fields && s.fields.summary && s.fields.summary.toLowerCase().indexOf('validate') !== -1; });
+            return validate ? validate.key : null;
           }).catch(function() { return null; }) : Promise.resolve(null);
 
-          return ecomP.then(function(parentKey) {
+          return ecomP.then(function(validateKey) {
             var ampTaskName, ampDesc;
-            if (parentKey) {
-              var label = parentKey + ' Validate ' + wl.issueKey;
+            if (validateKey) {
+              var label = validateKey + ' Validate ' + wl.issueKey;
               ampTaskName = label;
               ampDesc = label;
             } else {
@@ -670,7 +671,7 @@ function runSync(startDate, endDate) {
               ampDesc = cm.description;
             }
 
-            var lookupName = parentKey ? parentKey + ' Validate ' + wl.issueKey : wl.issueKey;
+            var lookupName = validateKey ? validateKey + ' Validate ' + wl.issueKey : wl.issueKey;
             var tid = tkc[lookupName];
             var tp = tid ? Promise.resolve(tid) : amp.lookupTask(proj.project_id, lookupName).then(function(id) { if (id) tkc[lookupName] = id; return id; });
             return tp.then(function(taskId) {
@@ -890,18 +891,19 @@ function runSync(startDate, endDate) {
               return w.issueKey === ent.ticket && w._amp && w._amp.start_date === ent.date;
             });
             if (!wl) throw new Error('Worklog not found');
-            var ecomP2 = isEcomManager() ? jira._r('GET', '/rest/api/3/issue/' + ent.ticket + '?fields=parent').then(function(r) {
-              var parent = r.body && r.body.fields && r.body.fields.parent;
-              return parent ? parent.key : null;
+            var ecomP2 = isEcomManager() ? jira._r('GET', '/rest/api/3/issue/' + ent.ticket + '?fields=subtasks').then(function(r) {
+              var subtasks = r.body && r.body.fields && r.body.fields.subtasks || [];
+              var validate = subtasks.find(function(s) { return s.fields && s.fields.summary && s.fields.summary.toLowerCase().indexOf('validate') !== -1; });
+              return validate ? validate.key : null;
             }).catch(function() { return null; }) : Promise.resolve(null);
-            return ecomP2.then(function(parentKey) {
-              var lookupName = parentKey ? parentKey + ' Validate ' + ent.ticket : ent.ticket;
+            return ecomP2.then(function(validateKey) {
+              var lookupName = validateKey ? validateKey + ' Validate ' + ent.ticket : ent.ticket;
               return amp.lookupTask(ent.projectId, lookupName).then(function(taskId) {
                 var t = wl._amp;
                 var cm = parseComment(wl.comment, wl.projectKey);
-                var desc = parentKey ? parentKey + ' Validate ' + ent.ticket : cm.description;
+                var desc = validateKey ? validateKey + ' Validate ' + ent.ticket : cm.description;
                 var p = { project_id: ent.projectId, client_id: ent.clientId, start_date: t.start_date, start_time: t.start_time, end_time: t.end_time, duration: t.duration, time_activity_id: cm.activityId, description: desc };
-                if (taskId) p.task_id = taskId; else p.task_name = parentKey ? parentKey + ' Validate ' + ent.ticket : ent.ticket + ' | ' + ent.summary;
+                if (taskId) p.task_id = taskId; else p.task_name = validateKey ? validateKey + ' Validate ' + ent.ticket : ent.ticket + ' | ' + ent.summary;
                 return amp.create(p);
               });
             }).then(function() { ok2++; }).catch(function() { fail2++; });
