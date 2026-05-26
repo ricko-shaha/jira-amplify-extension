@@ -405,13 +405,20 @@ Amp.prototype._tok = function() {
 Amp.prototype.create = function(data) {
   var self = this;
   return self._tok().then(function(t) {
-    var p = { _token: t.csrf, user_id: t.userId, client_id: String(data.client_id), project_id: String(data.project_id), time_activity_id: String(data.time_activity_id), start_date: data.start_date, start_time: data.start_time, end_time: data.end_time, duration: data.duration, description: data.description || '' };
-    if (data.task_id) p.task_id = String(data.task_id);
-    if (data.task_name) { p.task_name = data.task_name; p.task_status_id = ''; }
+    var p = new URLSearchParams();
+    p.append('_token', t.csrf); p.append('user_id', t.userId);
+    p.append('client_id', String(data.client_id)); p.append('project_id', String(data.project_id));
+    p.append('time_activity_id', String(data.time_activity_id));
+    p.append('start_date', data.start_date); p.append('start_time', data.start_time);
+    p.append('end_time', data.end_time); p.append('duration', data.duration);
+    p.append('description', data.description || '');
+    if (data.task_id) p.append('task_id', String(data.task_id));
+    if (data.task_name) { p.append('task_name', data.task_name); p.append('task_status_id', ''); }
+    if (data.tags && data.tags.length) { data.tags.forEach(function(tag) { p.append('tags[]', tag); }); }
     return self._x().then(function() {
       var h = { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest', Referer: self.base + '/timesheets' };
       if (self.xsrf) h['X-XSRF-TOKEN'] = self.xsrf;
-      return fetch(self.base + '/timesheets', { method: 'POST', credentials: 'include', headers: h, body: new URLSearchParams(p).toString() });
+      return fetch(self.base + '/timesheets', { method: 'POST', credentials: 'include', headers: h, body: p.toString() });
     }).then(function(r) {
       if (!r || !r.ok) throw new Error('Create failed: ' + (r ? r.status : 'no response'));
       return self._x();
@@ -675,7 +682,7 @@ function runSync(startDate, endDate) {
             var tid = tkc[lookupName];
             var tp = tid ? Promise.resolve(tid) : amp.lookupTask(proj.project_id, lookupName).then(function(id) { if (id) tkc[lookupName] = id; return id; });
             return tp.then(function(taskId) {
-              toCreate.push({ ticket: wl.issueKey, summary: wl.summary, project: proj.project_name, date: t.start_date, startTime: t.start_time, endTime: t.end_time, duration: t.duration, dd: fd(wl.timeSpentSeconds), activityId: cm.activityId, description: ampDesc, jiraComment: wl.comment || '', projectId: proj.project_id, clientId: proj.client_id, taskId: taskId, taskName: ampTaskName, parentKey: parentKey || null });
+              toCreate.push({ ticket: wl.issueKey, summary: wl.summary, project: proj.project_name, date: t.start_date, startTime: t.start_time, endTime: t.end_time, duration: t.duration, dd: fd(wl.timeSpentSeconds), activityId: cm.activityId, description: ampDesc, jiraComment: wl.comment || '', projectId: proj.project_id, clientId: proj.client_id, taskId: taskId, taskName: ampTaskName, tags: validateKey ? [label] : [] });
             });
           });
         });
@@ -902,8 +909,9 @@ function runSync(startDate, endDate) {
                 var t = wl._amp;
                 var cm = parseComment(wl.comment, wl.projectKey);
                 var desc = validateKey ? validateKey + ' Validate ' + ent.ticket : cm.description;
-                var p = { project_id: ent.projectId, client_id: ent.clientId, start_date: t.start_date, start_time: t.start_time, end_time: t.end_time, duration: t.duration, time_activity_id: cm.activityId, description: desc };
-                if (taskId) p.task_id = taskId; else p.task_name = validateKey ? validateKey + ' Validate ' + ent.ticket : ent.ticket + ' | ' + ent.summary;
+                var label = validateKey ? validateKey + ' Validate ' + ent.ticket : null;
+                var p = { project_id: ent.projectId, client_id: ent.clientId, start_date: t.start_date, start_time: t.start_time, end_time: t.end_time, duration: t.duration, time_activity_id: cm.activityId, description: desc, tags: label ? [label] : [] };
+                if (taskId) p.task_id = taskId; else p.task_name = label || ent.ticket + ' | ' + ent.summary;
                 return amp.create(p);
               });
             }).then(function() { ok2++; }).catch(function() { fail2++; });
@@ -923,7 +931,7 @@ function runSync(startDate, endDate) {
       var ok = 0, fail = 0, ch = Promise.resolve();
       a.toCreate.forEach(function(e) {
         ch = ch.then(function() {
-          var p = { project_id: e.projectId, client_id: e.clientId, start_date: e.date, start_time: e.startTime, end_time: e.endTime, duration: e.duration, time_activity_id: e.activityId, description: e.description };
+          var p = { project_id: e.projectId, client_id: e.clientId, start_date: e.date, start_time: e.startTime, end_time: e.endTime, duration: e.duration, time_activity_id: e.activityId, description: e.description, tags: e.tags || [] };
           if (e.taskId) p.task_id = e.taskId; else p.task_name = e.taskName;
           return amp.create(p).then(function() { ok++; }).catch(function() { fail++; });
         });
