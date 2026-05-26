@@ -93,20 +93,6 @@ tr:hover td { background: #fef8f4; }
 .btn-add { background: none; border: 1px dashed #d4b8a8; border-radius: 4px; padding: 5px 12px; font-size: 11px; color: #e8734a; cursor: pointer; width: 100%; margin-top: 4px; }
 .btn-add:hover { background: #fef0e8; border-color: #e8734a; }
 
-/* Offset dropdown */
-.offset-drop { position: relative; }
-.offset-drop-display { padding: 7px 10px; border: 1px solid #dfe1e6; border-radius: 4px; font-size: 12px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
-.offset-drop-display::after { content: '\25BE'; color: #6b778c; margin-left: 8px; }
-.offset-drop-display:hover { border-color: #b3bac5; }
-.offset-drop-panel { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: #fff; border: 1px solid #dfe1e6; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); margin-top: 2px; overflow: hidden; }
-.offset-drop-panel.open { display: block; }
-.offset-table { margin: 0; }
-.offset-table th { font-size: 9px; padding: 5px 8px; background: #f7f4f1; }
-.offset-table td { padding: 6px 8px; cursor: pointer; font-size: 11px; }
-.offset-opt { transition: background 0.1s; }
-.offset-opt:hover td { background: #fef0e8; }
-.offset-opt.selected td { background: #fde8dd; }
-.offset-result { font-family: monospace; font-weight: 600; color: #e8734a; white-space: nowrap; }
 
 .field { margin-bottom: 14px; }
 .field label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 4px; }

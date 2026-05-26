@@ -97,31 +97,32 @@ function autoMatchActivity(text) {
   });
   return bestMatch;
 }
-var jiraTimezone = null;
-var userTimeOffset = null; // null = auto, 'none' = no conversion, number = UTC offset
+function fmt12(h, m) { var a = h >= 12 ? 'PM' : 'AM'; return (h === 0 ? 12 : h > 12 ? h - 12 : h) + ':' + String(m).padStart(2, '0') + ' ' + a; }
 function toAmpTime(iso, secs) {
-  var f = function(h, m) { var a = h >= 12 ? 'PM' : 'AM'; return (h === 0 ? 12 : h > 12 ? h - 12 : h) + ':' + String(m).padStart(2, '0') + ' ' + a; };
+  var date = iso.split('T')[0];
   var dh = Math.floor(secs / 3600), dm = Math.round((secs % 3600) / 60);
-  var dur = dh + ':' + String(dm).padStart(2, '0');
-
-  var needsConversion = userTimeOffset !== null ? userTimeOffset !== 'none' : (!jiraTimezone || jiraTimezone.indexOf('Europe') !== -1 || jiraTimezone.indexOf('Berlin') !== -1 || jiraTimezone.indexOf('CET') !== -1 || jiraTimezone.indexOf('America') !== -1);
-
-  if (!needsConversion) {
-    // Jira is already in Amplify's timezone — extract local time directly from ISO string
-    var tp = iso.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    if (tp) {
-      var startH = parseInt(tp[4]), startM = parseInt(tp[5]);
-      var endTotalM = startH * 60 + startM + Math.round(secs / 60);
-      var endH = Math.floor(endTotalM / 60) % 24, endM = endTotalM % 60;
-      return { start_date: tp[1] + '-' + tp[2] + '-' + tp[3], start_time: f(startH, startM), end_time: f(endH, endM), duration: dur };
-    }
-  }
-
-  // Convert through UTC with offset
-  var offsetHours = (userTimeOffset !== null && userTimeOffset !== 'none') ? parseFloat(userTimeOffset) : 8;
-  var ms = new Date(iso).getTime() + offsetHours * 3600000;
-  var s = new Date(ms), e = new Date(ms + secs * 1000);
-  return { start_date: s.toISOString().split('T')[0], start_time: f(s.getUTCHours(), s.getUTCMinutes()), end_time: f(e.getUTCHours(), e.getUTCMinutes()), duration: dur };
+  return { start_date: date, start_time: '', end_time: '', duration: dh + ':' + String(dm).padStart(2, '0') };
+}
+function assignSequentialTimes(worklogs) {
+  var byDate = {};
+  worklogs.forEach(function(wl) {
+    var date = wl.started.split('T')[0];
+    if (!byDate[date]) byDate[date] = [];
+    byDate[date].push(wl);
+  });
+  Object.keys(byDate).forEach(function(date) {
+    var dayWls = byDate[date].sort(function(a, b) { return new Date(a.started) - new Date(b.started); });
+    var cursor = 14 * 60; // 2:00 PM
+    dayWls.forEach(function(wl) {
+      var durMins = Math.round(wl.timeSpentSeconds / 60);
+      var sH = Math.floor(cursor / 60), sM = cursor % 60;
+      var endCursor = cursor + durMins;
+      var eH = Math.floor(endCursor / 60) % 24, eM = endCursor % 60;
+      var dh = Math.floor(wl.timeSpentSeconds / 3600), dm = Math.round((wl.timeSpentSeconds % 3600) / 60);
+      wl._amp = { start_date: date, start_time: fmt12(sH, sM), end_time: fmt12(eH, eM), duration: dh + ':' + String(dm).padStart(2, '0') };
+      cursor = endCursor;
+    });
+  });
 }
 function fd(secs) { var h = Math.floor(secs / 3600), m = Math.round((secs % 3600) / 60); return h === 0 ? m + 'm' : m === 0 ? h + 'h' : h + 'h ' + m + 'm'; }
 function phm(d) { if (!d) return 0; var p = d.split(':'); return (parseInt(p[0]) || 0) * 60 + (parseInt(p[1]) || 0); }
@@ -613,6 +614,7 @@ function runSync(startDate, endDate) {
     sts(box, 'loading', '<span class="spinner"></span>Fetching worklogs...');
     return jira.worklogs(r.s, r.e);
   }).then(function(jw) {
+    assignSequentialTimes(jw);
     sts(box, 'loading', '<span class="spinner"></span>Fetching Amplify...');
     return amp.allTS(r.s, r.e).then(function(ae) { return { jw: jw, ae: ae }; });
   }).then(function(d) {
@@ -623,7 +625,7 @@ function runSync(startDate, endDate) {
     var chain = Promise.resolve();
     jw.forEach(function(wl) {
       chain = chain.then(function() {
-        var t = toAmpTime(wl.started, wl.timeSpentSeconds), cm = parseComment(wl.comment, wl.projectKey);
+        var t = wl._amp, cm = parseComment(wl.comment, wl.projectKey);
         // Task Map override — highest priority
         var tm = userTaskMap[wl.issueKey];
         if (tm) {
@@ -649,10 +651,30 @@ function runSync(startDate, endDate) {
         var pp = proj ? Promise.resolve(proj) : amp.lookupProj(wl.projectKey).then(function(p) { if (p) pc[wl.projectKey] = p; return p; });
         return pp.then(function(proj) {
           if (!proj) { unmapped.push({ ticket: wl.issueKey, summary: wl.summary, date: t.start_date, duration: fd(wl.timeSpentSeconds), reason: 'Project "' + wl.projectKey + '" not found' }); return; }
-          var tid = tkc[wl.issueKey];
-          var tp = tid ? Promise.resolve(tid) : amp.lookupTask(proj.project_id, wl.issueKey).then(function(id) { if (id) tkc[wl.issueKey] = id; return id; });
-          return tp.then(function(taskId) {
-            toCreate.push({ ticket: wl.issueKey, summary: wl.summary, project: proj.project_name, date: t.start_date, startTime: t.start_time, endTime: t.end_time, duration: t.duration, dd: fd(wl.timeSpentSeconds), activityId: cm.activityId, description: cm.description, jiraComment: wl.comment || '', projectId: proj.project_id, clientId: proj.client_id, taskId: taskId, taskName: wl.issueKey + ' | ' + wl.summary });
+
+          // E-com mode: fetch parent ticket and use parent-based task name
+          var ecomP = settings.ecomMode ? jira._r('GET', '/rest/api/3/issue/' + wl.issueKey + '?fields=parent').then(function(r) {
+            var parent = r.body && r.body.fields && r.body.fields.parent;
+            return parent ? parent.key : null;
+          }).catch(function() { return null; }) : Promise.resolve(null);
+
+          return ecomP.then(function(parentKey) {
+            var ampTaskName, ampDesc;
+            if (parentKey) {
+              var label = parentKey + ' Validate ' + wl.issueKey;
+              ampTaskName = label;
+              ampDesc = label;
+            } else {
+              ampTaskName = wl.issueKey + ' | ' + wl.summary;
+              ampDesc = cm.description;
+            }
+
+            var lookupName = parentKey ? parentKey + ' Validate ' + wl.issueKey : wl.issueKey;
+            var tid = tkc[lookupName];
+            var tp = tid ? Promise.resolve(tid) : amp.lookupTask(proj.project_id, lookupName).then(function(id) { if (id) tkc[lookupName] = id; return id; });
+            return tp.then(function(taskId) {
+              toCreate.push({ ticket: wl.issueKey, summary: wl.summary, project: proj.project_name, date: t.start_date, startTime: t.start_time, endTime: t.end_time, duration: t.duration, dd: fd(wl.timeSpentSeconds), activityId: cm.activityId, description: ampDesc, jiraComment: wl.comment || '', projectId: proj.project_id, clientId: proj.client_id, taskId: taskId, taskName: ampTaskName, parentKey: parentKey || null });
+            });
           });
         });
       });
@@ -863,18 +885,25 @@ function runSync(startDate, endDate) {
         entries.forEach(function(ent) {
           ch2 = ch2.then(function() {
             // Lookup task for this ticket in the assigned project
-            return amp.lookupTask(ent.projectId, ent.ticket).then(function(taskId) {
-              // Find the original worklog data
-              var wl = a.jw.find(function(w) {
-                var t = toAmpTime(w.started, w.timeSpentSeconds);
-                return w.issueKey === ent.ticket && t.start_date === ent.date;
+            var wl = a.jw.find(function(w) {
+              return w.issueKey === ent.ticket && w._amp && w._amp.start_date === ent.date;
+            });
+            if (!wl) throw new Error('Worklog not found');
+            var ecomP2 = settings.ecomMode ? jira._r('GET', '/rest/api/3/issue/' + ent.ticket + '?fields=parent').then(function(r) {
+              var parent = r.body && r.body.fields && r.body.fields.parent;
+              return parent ? parent.key : null;
+            }).catch(function() { return null; }) : Promise.resolve(null);
+            return ecomP2.then(function(parentKey) {
+              var lookupName = parentKey ? parentKey + ' Validate ' + ent.ticket : ent.ticket;
+              return amp.lookupTask(ent.projectId, lookupName).then(function(taskId) {
+                var t = wl._amp;
+                var cm = parseComment(wl.comment, wl.projectKey);
+                var desc = parentKey ? parentKey + ' Validate ' + ent.ticket : cm.description;
+                var p = { project_id: ent.projectId, client_id: ent.clientId, start_date: t.start_date, start_time: t.start_time, end_time: t.end_time, duration: t.duration, time_activity_id: cm.activityId, description: desc };
+                if (taskId) p.task_id = taskId; else p.task_name = parentKey ? parentKey + ' Validate ' + ent.ticket : ent.ticket + ' | ' + ent.summary;
+                return amp.create(p);
               });
-              if (!wl) throw new Error('Worklog not found');
-              var t = toAmpTime(wl.started, wl.timeSpentSeconds);
-              var cm = parseComment(wl.comment, wl.projectKey);
-              var p = { project_id: ent.projectId, client_id: ent.clientId, start_date: t.start_date, start_time: t.start_time, end_time: t.end_time, duration: t.duration, time_activity_id: cm.activityId, description: cm.description };
-              if (taskId) p.task_id = taskId; else p.task_name = ent.ticket + ' | ' + ent.summary;
-              return amp.create(p);
+            });
             }).then(function() { ok2++; }).catch(function() { fail2++; });
           });
         });
@@ -1367,7 +1396,7 @@ function loadProfile() {
     var name = u.displayName || 'Unknown';
     var email = u.emailAddress || '';
     var tz = u.timeZone || '';
-    jiraTimezone = tz;
+    // timezone no longer used — times are placed sequentially 2 PM–10 PM
     var org = '';
     if (u.groups && u.groups.items) {
       var g = u.groups.items.find(function(x) { return x.name !== 'jira-software-users' && !x.name.startsWith('jira-') && !x.name.startsWith('system-'); });
@@ -1671,8 +1700,7 @@ function runStats() {
 
 /* ═══ Init ═══ */
 document.addEventListener('DOMContentLoaded', function() {
-  chrome.storage.local.get(['amplifyEmail', 'amplifyPassword', 'activityMap', 'projectMap', 'taskMap', 'timeOffset']).then(function(s) {
-    if (s.timeOffset && s.timeOffset !== 'auto') userTimeOffset = s.timeOffset === 'none' ? 'none' : parseFloat(s.timeOffset);
+  chrome.storage.local.get(['amplifyEmail', 'amplifyPassword', 'activityMap', 'projectMap', 'taskMap', 'ecomMode']).then(function(s) {
     settings = s;
 
     // Load activity mappings from saved config
@@ -1693,30 +1721,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Settings
     if (s.amplifyEmail) document.getElementById('amplify-email').value = s.amplifyEmail;
     if (s.amplifyPassword) document.getElementById('amplify-password').value = s.amplifyPassword;
-    var offsetDisplay = document.getElementById('offset-drop-display');
-    var offsetPanel = document.getElementById('offset-drop-panel');
-    var offsetValue = s.timeOffset || 'auto';
-    function setOffsetSelection(val) {
-      offsetValue = val;
-      document.querySelectorAll('.offset-opt').forEach(function(r) { r.classList.toggle('selected', r.dataset.value === val); });
-      var sel = document.querySelector('.offset-opt[data-value="' + val + '"]');
-      if (sel) { var cells = sel.querySelectorAll('td'); offsetDisplay.textContent = cells[0].textContent + (cells[1].textContent !== 'Auto-detect' ? ' — ' + cells[1].textContent : ' (recommended)'); }
-    }
-    setOffsetSelection(offsetValue);
-    offsetDisplay.addEventListener('click', function(e) { e.stopPropagation(); offsetPanel.classList.toggle('open'); });
-    document.querySelectorAll('.offset-opt').forEach(function(row) {
-      row.addEventListener('click', function() { setOffsetSelection(row.dataset.value); offsetPanel.classList.remove('open'); });
-    });
-    document.addEventListener('click', function() { offsetPanel.classList.remove('open'); });
-    offsetPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+    if (s.ecomMode) document.getElementById('ecom-mode').checked = true;
 
     document.getElementById('save-settings').addEventListener('click', function() {
       var ae = document.getElementById('amplify-email').value.trim();
       var ap = document.getElementById('amplify-password').value;
-      var to = offsetValue;
+      var ec = document.getElementById('ecom-mode').checked;
       if (!ae || !ap) return;
-      userTimeOffset = (to && to !== 'auto') ? parseFloat(to) : null;
-      chrome.storage.local.set({ amplifyEmail: ae, amplifyPassword: ap, timeOffset: to }).then(function() {
+      chrome.storage.local.set({ amplifyEmail: ae, amplifyPassword: ap, ecomMode: ec }).then(function() {
         settings = { amplifyEmail: ae, amplifyPassword: ap };
         amp = new Amp();
         detectJiraDomain().then(function(domain) {

@@ -27,12 +27,17 @@ Chrome extension that syncs Jira worklogs to Amplify timesheets. Includes priori
    - Credentials are stored locally in Chrome storage. They are only sent to Amplify for authentication.
 4. Your Jira profile card should appear at the top of Settings once detection succeeds.
 
-## Time Offset
+## Time Placement
 
-The extension converts Jira worklog timestamps to Amplify's timezone (BD / GMT+6).
+The extension places all worklogs sequentially between **2:00 PM and 10:00 PM** (7.5 hour window). The order follows your Jira worklog timestamps, so the first log you made in Jira starts at 2 PM, the next one starts where the previous ended, and so on. No timezone conversion is needed.
 
-- **Auto (recommended)** — detects your Jira timezone and applies the correct offset automatically. No conversion if Jira is already in an Asian timezone; +8 hours if European.
-- Override manually only if synced times look wrong. The Settings tab shows a table of offsets with example conversions.
+## E-com Manager Mode
+
+If you are an E-com Manager, enable the **E-com Manager** checkbox in Settings. When enabled, worklogs are created under the parent ticket in Amplify instead of the child ticket.
+
+For example, if you log time on `BOD-363` and its parent is `BOD-638`, the Amplify entry will be created as:
+- Task: `BOD-638 Validate BOD-363`
+- Description: `BOD-638 Validate BOD-363`
 
 ## Tabs
 
@@ -96,7 +101,7 @@ View your worklog statistics for any date range. Shows total hours, daily averag
 ## Troubleshooting
 
 - **"Could not detect Jira domain"** — Make sure you are logged in to Jira Cloud in Chrome before opening the extension.
-- **Sync times look wrong** — Go to Settings and manually set the Time Offset instead of Auto.
+- **Sync times look wrong** — Times are placed sequentially from 2 PM. Check your Jira worklog order.
 - **Priority shows no tickets** — Your Jira must have role fields (Developer, QA, Designer, or E-com Manager) assigned to your account on active tickets.
 - **Amplify login fails** — Double-check your Amplify email and password. The extension authenticates via the Amplify web login flow.
 

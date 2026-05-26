@@ -160,28 +160,8 @@
         <small>Stored locally. Only sent to Amplify for login.</small>
       </div>
       <div class="field">
-        <label>Amplify Time Offset</label>
-        <div class="offset-drop" id="offset-drop">
-          <div class="offset-drop-display" id="offset-drop-display">Auto (recommended)</div>
-          <div class="offset-drop-panel" id="offset-drop-panel">
-            <table class="offset-table">
-              <thead>
-                <tr><th>Offset</th><th>Jira Timezone</th><th>10 AM UTC →</th></tr>
-              </thead>
-              <tbody>
-                <tr class="offset-opt selected" data-value="auto"><td><strong>Auto</strong></td><td>Auto-detect</td><td class="offset-result">Varies</td></tr>
-                <tr class="offset-opt" data-value="none"><td><strong>None</strong></td><td>BD (GMT+6)</td><td class="offset-result">No change</td></tr>
-                <tr class="offset-opt" data-value="5"><td>+5</td><td>UTC+5</td><td class="offset-result">3:00 PM</td></tr>
-                <tr class="offset-opt" data-value="5.5"><td>+5:30</td><td>UTC+5:30 (IST)</td><td class="offset-result">3:30 PM</td></tr>
-                <tr class="offset-opt" data-value="6"><td>+6</td><td>UTC+6 (BD)</td><td class="offset-result">4:00 PM</td></tr>
-                <tr class="offset-opt" data-value="7"><td>+7</td><td>UTC+7</td><td class="offset-result">5:00 PM</td></tr>
-                <tr class="offset-opt" data-value="8"><td>+8</td><td>CET / German</td><td class="offset-result">6:00 PM</td></tr>
-                <tr class="offset-opt" data-value="9"><td>+9</td><td>UTC+9 (JST/KST)</td><td class="offset-result">7:00 PM</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <small>Auto detects your Jira timezone. Override only if synced times look wrong.</small>
+        <label><input type="checkbox" id="ecom-mode"> E-com Manager</label>
+        <small>When enabled, worklogs are created under the parent ticket in Amplify (e.g., BOD-638 Validate BOD-363).</small>
       </div>
       <button class="btn-primary" id="save-settings">Save Settings</button>
       <span id="save-msg" class="save-msg">Saved!</span>
